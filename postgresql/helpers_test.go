@@ -9,12 +9,12 @@ import (
 
 func TestFindStringSubmatchMap(t *testing.T) {
 
-	resultMap := findStringSubmatchMap(`(?si).*\$(?P<Body>.*)\$.*`, "aa $somehing_to_extract$ bb")
+	resultMap := findStringSubmatchMap(`(?si).*\$(?P<Body>.*)\$.*`, "aa $something_to_extract$ bb")
 
 	assert.Equal(t,
 		resultMap,
 		map[string]string{
-			"Body": "somehing_to_extract",
+			"Body": "something_to_extract",
 		},
 	)
 }
@@ -98,12 +98,12 @@ func TestArePrivilegesEqual(t *testing.T) {
 	for _, configuration := range tt {
 		err := configuration.d.Set("privileges", configuration.wanted)
 		assert.NoError(t, err)
-		equal := resourcePrivilegesEqual(configuration.granted, configuration.d)
+		equal := resourcePrivilegesEqual(configuration.granted, nil, configuration.d)
 		assert.Equal(t, configuration.assertion, equal)
 	}
 }
 
-func buildPrivilegesSet(grants ...interface{}) *schema.Set {
+func buildPrivilegesSet(grants ...any) *schema.Set {
 	return schema.NewSet(schema.HashString, grants)
 }
 

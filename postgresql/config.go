@@ -46,6 +46,7 @@ const (
 	featureServer
 	featureCreateRoleSelfGrant
 	featureSecurityLabel
+	featureMaintainPrivilege
 )
 
 var (
@@ -122,6 +123,9 @@ var (
 		// https://www.postgresql.org/docs/16/release-16.html#RELEASE-16-PRIVILEGES
 		featureCreateRoleSelfGrant: semver.MustParseRange(">=16.0.0"),
 		featureSecurityLabel:       semver.MustParseRange(">=11.0.0"),
+
+		// MAINTAIN privilege on tables (PG 17+)
+		featureMaintainPrivilege: semver.MustParseRange(">=17.0.0"),
 	}
 )
 
@@ -302,12 +306,12 @@ func (c *Client) Connect() (*DBConnection, error) {
 		}
 		if err != nil {
 			errString := strings.Replace(err.Error(), c.config.Password, "XXXX", 2)
-			return nil, fmt.Errorf("Error connecting to PostgreSQL server %s (scheme: %s): %s", c.config.Host, c.config.Scheme, errString)
+			return nil, fmt.Errorf("error connecting to PostgreSQL server %s (scheme: %s): %s", c.config.Host, c.config.Scheme, errString)
 		}
 
 		// We don't want to retain connection
 		// So when we connect on a specific database which might be managed by terraform,
-		// we don't keep opened connection in case of the db has to be dopped in the plan.
+		// we don't keep opened connection in case of the db has to be dropped in the plan.
 		db.SetMaxIdleConns(0)
 		db.SetMaxOpenConns(c.config.MaxConns)
 
@@ -365,17 +369,17 @@ func openImpersonatedGCPDBConnection(ctx context.Context, dsn string, targetServ
 		Scopes:          []string{"https://www.googleapis.com/auth/sqlservice.admin"},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Error creating token source with service account impersonation of %s: %w", targetServiceAccountEmail, err)
+		return nil, fmt.Errorf("error creating token source with service account impersonation of %s: %w", targetServiceAccountEmail, err)
 	}
 	client, err := gcp.NewHTTPClient(gcp.DefaultTransport(), ts)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating HTTP client with service account impersonation of %s: %w", targetServiceAccountEmail, err)
+		return nil, fmt.Errorf("error creating HTTP client with service account impersonation of %s: %w", targetServiceAccountEmail, err)
 	}
 	certSource := cloudsql.NewCertSourceWithIAM(client, ts)
 	opener := gcppostgres.URLOpener{CertSource: certSource}
 	dbURL, err := url.Parse(dsn)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing connection string: %w", err)
+		return nil, fmt.Errorf("error parsing connection string: %w", err)
 	}
 	return opener.OpenPostgresURL(ctx, dbURL)
 }
