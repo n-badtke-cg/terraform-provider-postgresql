@@ -2,10 +2,23 @@ TEST?=$$(go list ./...)
 GOFMT_FILES?=$$(find . -name '*.go')
 PKG_NAME=postgresql
 
+MAKEFLAGS += --silent
+
+VERSION=$$(git describe --tags)
+
 default: build
 
-build: fmtcheck
+install: fmtcheck
 	go install
+
+build: install fmtcheck
+	go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o terraform-provider-$(PKG_NAME)_$(VERSION)
+
+goreleaser-build: install fmtcheck
+	goreleaser build
+
+goreleaser-release-snapshot-build: install fmtcheck
+	goreleaser release --snapshot --clean --skip=publish
 
 test: fmtcheck
 	go test $(TEST) || exit 1
